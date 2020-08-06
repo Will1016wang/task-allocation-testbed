@@ -82,7 +82,7 @@ class Planner():
             # print(distanceMatrix)
             reset_col_ind = new_col_ind.astype(int)
             #print('reset_col_ind: ', reset_col_ind)
-            agent_state = self.agent_state_reset(reset_col_ind[i2],n_agents,dependency_test_params.tasks)
+            agent_state = self.agent_state_reset(reset_col_ind[i2],n_agents, self.env.tasks)
             #print('This is the current agent states: ', agent_state)
             # print('This is col_indList')
             # print(col_indList)
@@ -96,7 +96,7 @@ class Planner():
             # for j in range(len(col_indList[p])):
             #     print(j)
         for i5 in range(math.ceil(n_tasks2 / n_agents)):
-            print('This is i5: ', i5)
+            #print('This is i5: ', i5)
             for i7 in range(n_agents):
                 # print('number of n_tasks', n_tasks)
                 # print('This is number of i7')
