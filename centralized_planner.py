@@ -9,10 +9,6 @@ class Planner():
 
     def __init__(self,env):
         self.env = env
-        # self.matrix = env.task_dependency_matrix
-        # self.tasks_assigned = np.ones((env.n_tasks,))
-        # self.readiness = env.task_readiness
-        # self.task_dependency_checklist = self.tasks_assigned @ self.matrix
 
     def agent_state_reset(self, col_ind, n_agents, tasks):
         new_agent_state = [[] for _ in range(n_agents)]
@@ -21,34 +17,33 @@ class Planner():
         return new_agent_state
 
     def plan(self):
-
         # initialize the states
-
         n_agents = self.env.x.shape[0]
         n_tasks = self.env.tasks.shape[0]
         n_tasks2 = self.env.tasks.shape[0]
         agent_state = self.env.x
         task_state = self.env.tasks
-        readiness = self.env.task_readiness
         tasks_assigned = np.ones((self.env.n_tasks,))
         matrix = self.env.task_dependency_matrix
-        distanceMatrix = np.zeros((n_agents, n_tasks))
         col_indList = [[] for _ in range(math.ceil(n_tasks / n_agents))]
-        #print(col_indList)
         new_col_ind = np.zeros(((math.ceil(n_tasks / n_agents)), n_agents))
+        # new_col_ind2 = np.zeros((math.ceil(n_tasks / n_agents)), n_agents)
         task_list = np.arange(n_tasks)
         #task_list2 = np.arange(n_tasks)
         for i2 in range(math.ceil(n_tasks / n_agents)):
             distanceMatrix = np.zeros((n_agents, len(task_list)))
             n_tasks = len(task_state)
-            task_dependency_checklist = tasks_assigned @ matrix
+            task_dependency_checklist = matrix @ tasks_assigned
+            # task_dependency_checklist = np.array([task_dependency_checklist[i] for i in range(len(new_col_ind.flatten())) if i not in new_col_ind.flatten()])
+            #task_dependency_checklist = task_dependency_checklist.T
             for i in range(n_agents):
                 for j in range(len(task_list)):
                     distanceMatrix[i][j] =(agent_state[i][0] - task_state[j][0])**2 + (agent_state[i][1] - task_state[j][1]) ** 2
-            for i in range(n_agents):
-                for j in range(len(task_list)):
-                    if task_dependency_checklist[j] is not 0:
-                        distanceMatrix[i][j] = np.max(distanceMatrix)
+            for i_1 in range(n_agents):
+                for j_1 in range(len(task_list)):
+                    task_dependency_checklist = task_dependency_checklist.astype(int)
+                    if task_dependency_checklist[j_1] != 0:
+                        distanceMatrix[i_1,j_1] = np.max(distanceMatrix)
             # this matrix is built for applying Hungarian algorithm
             if n_agents < n_tasks:
                 dummy_distanceM = np.zeros((n_tasks-n_agents,n_tasks))
@@ -61,14 +56,20 @@ class Planner():
                 # add dummy matrix to keep the original matrix satisfy the requriement
             row_ind, col_ind = linear_sum_assignment(new_distanceM)
             col_ind = col_ind[:n_agents]
-            n_tasks = n_tasks - len(col_ind)
             for i6 in range(len(col_ind)):
                 new_col_ind[i2][i6] = task_list[col_ind[i6]]
-                tasks_assigned[task_list[col_ind[i6]]] = 0
+                # new_col_ind2[i2][i6] = col_ind[i6]
+                # tasks_assigned[task_list[col_ind[i6]]] = 0
+                # matrix[i6,i6] = 0
+            # task_dependency_checklist = matrix @ tasks_assigned
+            tasks_assigned = np.delete(tasks_assigned, col_ind)
+            # task_dependency_checklist = np.delete(task_dependency_checklist, col_ind)
+            m = [i for i in range(matrix.shape[0]) if i not in col_ind]
+            matrix = matrix[m]
+            matrix = matrix[:,m]
             task_list = [task_list[i] for i in range(len(task_list)) if (i not in col_ind)]
             task_state = [self.env.tasks[task_list[i]] for i in range(len(task_list))]
             col_indList[i2] = new_col_ind[i2]
-            distanceMatrix = np.delete(distanceMatrix, new_col_ind[i2], axis=1)
             reset_col_ind = new_col_ind.astype(int)
             agent_state = self.agent_state_reset(reset_col_ind[i2],n_agents, self.env.tasks)
         assignment_list = [[] for _ in range(n_agents)]
